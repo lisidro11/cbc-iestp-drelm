@@ -1,0 +1,20 @@
+CBC IESTP DRELM - V3 Supabase
+
+1. Cree el proyecto en Supabase.
+2. Abra SQL Editor y ejecute TODO el archivo supabase_setup.sql.
+3. En Authentication > Users cree los usuarios con correo y contraseña.
+4. En Project Settings / API copie:
+   - Project URL
+   - Publishable key (o anon key si su proyecto muestra claves antiguas)
+5. Pegue esos DOS valores en supabase-config.js.
+   IMPORTANTE: nunca pegue service_role, secret key ni la contraseña de la BD.
+6. Publique todos estos archivos en GitHub Pages.
+7. Inicie sesión desde la app. Las visitas/evaluaciones se sincronizarán a Supabase.
+
+PADRÓN:
+Esta V3 mantiene el padrón incorporado en data.js para comenzar sin bloquear el trabajo.
+El siguiente paso es migrar los 323 registros a public.iestp y administrar el padrón centralmente.
+
+EVIDENCIAS:
+El SQL crea un bucket privado cbc-evidencias. La interfaz ya conserva el nombre de la evidencia;
+la subida binaria al bucket puede activarse en la siguiente iteración.

@@ -1,0 +1,8 @@
+APLICATIVO DE MONITOREO CBC IESTP 2026
+
+1. Abrir index.html en un servidor web. Para prueba local: python -m http.server 8000 dentro de esta carpeta y abrir http://localhost:8000
+2. Incluye el padrón entregado Institutos LM - 2026.xlsx convertido a datos internos.
+3. Las visitas se guardan en localStorage del navegador (prototipo). No es todavía una base de datos multiusuario.
+4. El módulo Administrar padrón permite reemplazarlo mediante CSV UTF-8 con encabezados COD_MOD y CEN_EDU (se recomienda conservar todos los encabezados originales).
+5. La clasificación automática reproduce la matriz entregada y debe validarse institucionalmente antes de uso oficial.
+6. Para producción se requiere autenticación, servidor/base de datos, almacenamiento real de evidencias, control de usuarios, copias de seguridad y HTTPS.
