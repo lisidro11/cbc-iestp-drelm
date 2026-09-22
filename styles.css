@@ -27,3 +27,6 @@
 #gpsAccuracy,#extraHelp,#evidenceRule,#signatureName{display:block;margin-top:5px;color:#58718b;font-size:.78rem}
 .validationWarn{color:#9a5b00!important;font-weight:700}.validationBad{color:#a12222!important;font-weight:700}
 @media(max-width:760px){.formGrid{grid-template-columns:1fr}.score{gap:6px}.score button{min-height:52px}.fichaGrid{grid-template-columns:1fr}.stepper{overflow-x:auto}.step{min-width:145px}.homeHero{grid-template-columns:1fr}.heroPhoto{min-height:230px}.heroCopy{padding:24px}.dashGrid{grid-template-columns:1fr}.reportTable{min-width:850px}}
+/* v2.1 evidencia móvil robusta */
+.evidencePreview{margin-top:8px;display:flex;align-items:center;gap:10px}.evidencePreview img{max-width:180px;max-height:120px;border-radius:10px;border:1px solid #d6e2ee;object-fit:cover}.evidencePreview .okUpload{padding:7px 10px;border-radius:8px;background:#e8f7ef;color:#116b42;font-weight:700}.evidencePreview .warnUpload{padding:7px 10px;border-radius:8px;background:#fff4df;color:#8a5a00;font-weight:700}
+@media(max-width:700px){.scoreLegend span{font-size:10px;line-height:1.2}.evidencePreview img{max-width:140px}}
