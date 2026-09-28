@@ -1,0 +1,9 @@
+CBC IESTP DRELM - v2.3.1 ADMIN (corregida)
+
+1. Ejecutar ACTUALIZACION_V23_ADMIN.sql en Supabase SQL Editor.
+2. El script está adaptado a la base real verificada y crea medidas_correctivas si faltaba.
+3. Verifique que el resultado final muestre admin_lisidro_ok=1, medidas_correctivas_ok=true y bitacora_admin_ok=true.
+4. Luego publique estos archivos en GitHub Pages.
+
+Administrador: lisidro@drelm.gob.pe
+Los demás perfiles se muestran como Especialista salvo que su rol sea admin.

@@ -1,0 +1,15 @@
+APP CBC IESTP v2.2
+
+Mejoras principales:
+- Rol visible: Administrador / Especialista.
+- Mi cuenta: nombre visible y cambio de contraseña.
+- Recuperación de contraseña desde el login.
+- Especialistas mantienen descarga Excel y consulta de tablero/historial.
+- Finalizar y enviar bloquea definitivamente la ficha para el especialista.
+- Mensaje de confirmación posterior al envío con código de visita.
+- Historial distingue Borrador (Continuar) y Finalizada (Ver ficha / solo lectura).
+- IESTP con visita finalizada solo permite una nueva visita como seguimiento/subsanación/verificación.
+- Aviso permanente en fichas cerradas para solicitar corrección al administrador.
+- Se mantienen mejoras v2.1 de evidencia móvil, GPS, medidas correctivas y cumplimiento del instrumento.
+
+Esta versión no requiere SQL adicional respecto de v2.1.

@@ -263,3 +263,191 @@ cloudSave=async function(v){
   const rows=(v.measures||[]).map(m=>({visita_id:v.cloudId,variable:m.variable,cbc:m.cbc||'',codigo_indicador:m.codigo||'',codigo_medida:m.rec_code,medida:m.action,responsable:m.responsible||null,plazo_dias:m.days||null,fecha_vencimiento:m.due_date||null,estado:m.status||'Pendiente',seguimiento:m.followup||null,updated_at:new Date().toISOString()}));
   if(rows.length){const rr=await sb.from('medidas_correctivas').upsert(rows,{onConflict:'visita_id,variable,codigo_medida'});if(rr.error)console.warn('Medidas sync',rr.error)}
 }
+
+/* ===== v2.2: especialistas, cuenta personal y cierre inmutable ===== */
+let lastFinalVisitId = null;
+function roleLabel(role){ const r=String(role||'').toLowerCase(); return r==='admin'?'Administrador':'Especialista'; }
+function visitCode(v){
+  if(!v) return '';
+  const year=(v.meta?.fecha||new Date().toISOString().slice(0,10)).slice(0,4);
+  const raw=String(v.cloudId||v.id||'').replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+  return `CBC-${year}-${(raw.slice(-8)||Date.now().toString().slice(-8))}`;
+}
+const _enterSessionV22=enterSession;
+enterSession=async function(user){
+  await _enterSessionV22(user);
+  if($('userLabel')) $('userLabel').textContent=(profile?.nombre||user.email)+' · '+roleLabel(profile?.rol);
+  if($('accountBtn')) $('accountBtn').classList.remove('hidden');
+  const admin=(profile?.rol||'').toLowerCase()==='admin';
+  if($('navAdmin')) $('navAdmin').classList.toggle('hidden',!admin);
+  if($('quickAdmin')) $('quickAdmin').classList.toggle('hidden',!admin);
+};
+const _logoutV22=logout;
+logout=async function(){ if($('accountBtn')) $('accountBtn').classList.add('hidden'); return _logoutV22(); };
+function showAccount(){
+  if(!authUser) return;
+  $('accountName').value=profile?.nombre||'';
+  $('accountEmail').value=authUser.email||'';
+  $('accountRole').value=roleLabel(profile?.rol);
+  $('newPassword').value=''; $('confirmPassword').value='';
+  $('accountMsg').classList.add('hidden');
+  show('account');
+}
+async function saveAccountName(){
+  const nombre=$('accountName').value.trim(); if(!nombre) return accountMessage('Ingresa tu nombre.',true);
+  const {error}=await sb.rpc('update_my_profile_name',{p_nombre:nombre});
+  if(error) return accountMessage('No se pudo actualizar el nombre.',true);
+  profile.nombre=nombre; $('userLabel').textContent=nombre+' · '+roleLabel(profile.rol); accountMessage('✓ Nombre actualizado correctamente.');
+}
+async function changePassword(){
+  const a=$('newPassword').value,b=$('confirmPassword').value;
+  if(a.length<8) return accountMessage('La nueva contraseña debe tener al menos 8 caracteres.',true);
+  if(a!==b) return accountMessage('Las contraseñas no coinciden.',true);
+  const {error}=await sb.auth.updateUser({password:a});
+  if(error) return accountMessage('No se pudo actualizar la contraseña: '+error.message,true);
+  $('newPassword').value=''; $('confirmPassword').value=''; accountMessage('✓ Contraseña actualizada correctamente.');
+}
+function accountMessage(t,bad=false){const e=$('accountMsg');e.textContent=t;e.classList.remove('hidden');e.style.color=bad?'#9d2525':'';}
+async function forgotPassword(){
+  if(!backendConfigured) return backendMsg('Supabase no está configurado.',true);
+  const email=$('loginEmail').value.trim();
+  if(!email) return backendMsg('Escribe primero tu correo institucional.',true);
+  const redirectTo=location.origin+location.pathname;
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
+  if(error) return backendMsg('No fue posible enviar el enlace de recuperación.',true);
+  backendMsg('✓ Revisa tu correo institucional. Te enviamos un enlace para crear una nueva contraseña.');
+}
+if(sb){ sb.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ setTimeout(()=>{ if(authUser) showAccount(); },500); } }); }
+
+const _saveDraftV22=saveDraft;
+saveDraft=function(silent=false){
+  if(current?.status==='Finalizada'){ if(!silent) alert('🔒 Esta ficha está finalizada y es de solo lectura. Para solicitar una corrección, comuníquese con el administrador indicando el código de visita '+visitCode(current)+'.'); return; }
+  return _saveDraftV22(silent);
+};
+const _resumeVisitV22=resumeVisit;
+resumeVisit=function(id){
+  const v=visits.find(x=>x.id===id);
+  if(v?.status==='Finalizada'){ current=v; alert('🔒 Esta ficha ya fue finalizada y no puede volver a abrirse para edición.\n\nCódigo: '+visitCode(v)+'\nPara solicitar una corrección, comuníquese con el administrador.'); return openFicha(id); }
+  return _resumeVisitV22(id);
+};
+
+finishVisit=async function(){
+  if(!current) return;
+  if(current.status==='Finalizada') return alert('Esta ficha ya se encuentra finalizada.');
+  if(current.ownerId&&authUser&&current.ownerId!==authUser.id&&(profile?.rol||'').toLowerCase()!=='admin') return alert('Esta visita pertenece a otro especialista y está disponible solo para consulta.');
+  if(Object.keys(current.answers||{}).length<MATRIZ.length) return alert('Para finalizar la visita deben registrarse los 36 indicadores. Puedes guardarla como borrador y continuar después.');
+  for(const x of MATRIZ){
+    const a=current.answers[x.Variable]||{},sp=extraSpec(x);
+    if(!a.score) return alert('Falta valoración en '+x.Código+' · '+x.Indicador);
+    if(sp.required&&!String(a.extra||'').trim()) return alert('Falta dato cuantitativo en '+x.Código+' · '+x.Indicador);
+    if(Number(a.score)<3&&!a.evidenceName&&!ensureMeasures(current).some(m=>m.variable===x.Variable)) return alert('La valoración menor a 3 en '+x.Código+' requiere evidencia o medida correctiva.');
+  }
+  if(!confirm('FINALIZAR Y ENVIAR FICHA\n\nUna vez enviada, la ficha quedará cerrada y ya no podrá ser modificada por el especialista.\n\n¿Confirmas que has revisado la información y deseas finalizarla?')) return;
+  current.status='Finalizada'; current.finishedAt=new Date().toISOString();
+  const i=visits.findIndex(v=>v.id===current.id); if(i>=0) visits[i]=current; else visits.push(current);
+  localStorage.setItem('cbc_visits',JSON.stringify(visits));
+  if(backendConfigured&&authUser) await cloudSave(current);
+  sessionStorage.removeItem('cbc_restore');
+  lastFinalVisitId=current.id;
+  const code=visitCode(current), dt=new Date(current.finishedAt);
+  $('finalSuccessInfo').innerHTML=`<div><small>Institución</small><b>${esc(current.ie?.CEN_EDU||'')}</b></div><div><small>Código de visita</small><b>${esc(code)}</b></div><div><small>Fecha y hora de envío</small><b>${esc(dt.toLocaleString('es-PE'))}</b></div><div><small>Especialista</small><b>${esc(current.meta?.supervisor||profile?.nombre||'')}</b></div>`;
+  show('finalSuccess');
+};
+function openLastFinalFicha(){ const v=visits.find(x=>x.id===lastFinalVisitId)||current; if(v){current=v;show('ficha');} }
+function downloadLastFinalPDF(){ const v=visits.find(x=>x.id===lastFinalVisitId)||current; if(v){current=v;downloadFichaPDF();} }
+
+renderHistory=function(){
+  $('historyList').innerHTML=visits.length?visits.slice().reverse().map(v=>{let old=current;current=v;let c=calc();current=old;const fin=v.status==='Finalizada',ann=v.status==='Anulada';return `<div class="historyRow"><div><b>${esc(v.ie?.CEN_EDU||'')}</b><div class="meta">${esc(v.meta?.fecha||'')} · ${esc(v.meta?.tipo||'')} · ${esc(v.meta?.supervisor||'')}</div><div class="meta">${ann?'⛔ Anulada':fin?'🔒 Finalizada':'📝 Borrador'} · Índice global ${c.pct}%${fin?' · '+esc(visitCode(v)):''}</div></div><div class="historyTools">${(fin||ann)?`<button onclick="openFicha('${v.id}')">Ver ficha</button>`:`<button onclick="resumeVisit('${v.id}')">Continuar</button>`}</div></div>`}).join(''):'<div class="note">Aún no hay visitas guardadas.</div>';
+};
+const _renderFichaV22=renderFicha;
+renderFicha=function(){
+  _renderFichaV22(); if(!current) return;
+  const head=$('fichaContent')?.querySelector('.fichaHead');
+  if(head&&current.status==='Finalizada'){
+    const n=document.createElement('div'); n.className='lockedNotice fichaLocked'; n.innerHTML=`<b>🔒 Ficha finalizada · Solo lectura</b><p>Código de visita: <b>${esc(visitCode(current))}</b>. Esta ficha no admite modificaciones. Para solicitar una corrección, comuníquese con el administrador indicando este código y el motivo.</p>`; head.after(n);
+  }
+};
+
+
+/* ===== v2.3: administración segura ===== */
+function isAdmin(){return String(profile?.rol||'').toLowerCase()==='admin';}
+function fmtDateTime(v){if(!v)return '—';try{return new Date(v).toLocaleString('es-PE')}catch{return v}}
+async function showAdmin(){
+  if(!isAdmin()) return alert('Acceso exclusivo para el administrador.');
+  show('admin');
+  await Promise.all([loadAdminUsers(),loadAdminAudit()]);
+  renderAdminVisits();
+}
+async function loadAdminUsers(){
+  if(!isAdmin()||!sb)return;
+  const {data,error}=await sb.rpc('admin_list_users');
+  if(error){console.warn(error);$('adminUsersBody').innerHTML='<tr><td colspan="6">Ejecuta ACTUALIZACION_V23_ADMIN.sql en Supabase para habilitar este módulo.</td></tr>';return;}
+  window._adminUsers=data||[];
+  $('adminUsersKpi').textContent=window._adminUsers.length;
+  $('adminActiveKpi').textContent=window._adminUsers.filter(x=>x.activo).length;
+  $('adminVisitsKpi').textContent=visits.length;
+  $('adminFinalKpi').textContent=visits.filter(v=>v.status==='Finalizada').length;
+  $('adminUsersBody').innerHTML=window._adminUsers.map(u=>{
+    const self=u.user_id===authUser?.id, active=!!u.activo;
+    return `<tr><td><b>${esc(u.nombre||'Sin nombre')}</b></td><td>${esc(u.email||'')}</td><td>${esc(roleLabel(u.rol))}</td><td><span class="adminStatus ${active?'on':'off'}">${active?'Habilitado':'Retirado'}</span></td><td>${esc(fmtDateTime(u.last_sign_in_at))}</td><td>${self?'<span class="muted">Tu cuenta</span>':`<button class="${active?'dangerSmall':'secondary'}" onclick="adminToggleUser('${u.user_id}',${!active})">${active?'Retirar acceso':'Habilitar'}</button>`}</td></tr>`;
+  }).join('')||'<tr><td colspan="6">No hay usuarios.</td></tr>';
+}
+async function adminToggleUser(id,enable){
+  if(!isAdmin())return;
+  const action=enable?'habilitar':'retirar';
+  if(!confirm(`¿Confirmas ${action} el acceso de este usuario?`))return;
+  const {error}=await sb.rpc('admin_set_user_active',{p_user_id:id,p_activo:enable});
+  if(error)return alert('No se pudo actualizar el usuario: '+error.message);
+  await loadAdminUsers(); await loadAdminAudit();
+}
+function renderAdminVisits(){
+  if(!isAdmin()||!$('adminVisitsList'))return;
+  const q=($('adminVisitSearch')?.value||'').toLowerCase();
+  const rows=visits.slice().reverse().filter(v=>!q||[v.ie?.CEN_EDU,v.meta?.supervisor,visitCode(v),v.meta?.fecha,v.status].join(' ').toLowerCase().includes(q));
+  $('adminVisitsList').innerHTML=rows.map(v=>{
+    const fin=v.status==='Finalizada', ann=v.status==='Anulada';
+    return `<div class="historyRow adminVisitRow"><div><b>${esc(v.ie?.CEN_EDU||'')}</b><div class="meta">${esc(visitCode(v))} · ${esc(v.meta?.fecha||'')} · ${esc(v.meta?.supervisor||'')}</div><div class="meta">${ann?'⛔ Anulada':fin?'🔒 Finalizada':'📝 Borrador'} · ${esc(v.meta?.tipo||'')}</div></div><div class="historyTools"><button onclick="openFicha('${v.id}')">Ver</button>${fin?`<button class="secondary" onclick="adminAnnulVisit('${v.id}')">Anular</button>`:''}<button class="dangerSmall" onclick="adminDeleteVisit('${v.id}')">Eliminar prueba</button></div></div>`;
+  }).join('')||'<div class="note">No hay fichas que coincidan con la búsqueda.</div>';
+}
+async function adminAnnulVisit(id){
+  if(!isAdmin())return;
+  const v=visits.find(x=>x.id===id); if(!v)return;
+  const motivo=prompt('Motivo de anulación de la ficha '+visitCode(v)+':');
+  if(!motivo?.trim())return;
+  if(!confirm('La ficha quedará ANULADA y se conservará para trazabilidad. ¿Continuar?'))return;
+  const {error}=await sb.rpc('admin_annul_visit',{p_visita_id:v.cloudId||v.id,p_motivo:motivo.trim()});
+  if(error)return alert('No se pudo anular: '+error.message);
+  await syncFromCloud(); renderAdminVisits(); await loadAdminAudit(); alert('Ficha anulada. Se conserva en el historial para trazabilidad.');
+}
+async function removeEvidenceForVisit(v){
+  if(!sb||!v)return;
+  const paths=Object.values(v.answers||{}).map(a=>a.evidencePath).filter(Boolean);
+  if(paths.length)try{await sb.storage.from('evidencias-cbc').remove(paths)}catch(e){console.warn(e)}
+}
+async function adminDeleteVisit(id){
+  if(!isAdmin())return;
+  const v=visits.find(x=>x.id===id);if(!v)return;
+  const code=visitCode(v);
+  const typed=prompt(`ELIMINAR FICHA DE PRUEBA\n\n${code} · ${v.ie?.CEN_EDU||''}\n\nEsta acción es definitiva. Escribe ELIMINAR para confirmar:`);
+  if(typed!=='ELIMINAR')return;
+  await removeEvidenceForVisit(v);
+  const {error}=await sb.rpc('admin_delete_visit',{p_visita_id:v.cloudId||v.id,p_motivo:'Eliminación de registro de prueba desde panel administrador'});
+  if(error)return alert('No se pudo eliminar: '+error.message);
+  await syncFromCloud(); renderAdminVisits(); await loadAdminAudit(); alert('Ficha de prueba eliminada.');
+}
+async function adminClearTestData(){
+  if(!isAdmin())return;
+  const typed=prompt('LIMPIAR DATOS DE PRUEBA\n\nSe eliminarán TODAS las fichas, evaluaciones y medidas correctivas. NO se eliminarán usuarios ni padrón.\n\nEscribe LIMPIAR PRUEBAS para confirmar:');
+  if(typed!=='LIMPIAR PRUEBAS')return;
+  if(!confirm('Última confirmación: esta acción eliminará todas las fichas registradas. ¿Continuar?'))return;
+  for(const v of visits) await removeEvidenceForVisit(v);
+  const {error}=await sb.rpc('admin_clear_test_data',{p_confirmacion:'LIMPIAR PRUEBAS'});
+  if(error)return alert('No se pudo realizar la limpieza: '+error.message);
+  visits=[];current=null;localStorage.removeItem('cbc_visits');renderAdminVisits();await loadAdminAudit();$('adminVisitsKpi').textContent='0';$('adminFinalKpi').textContent='0';alert('Datos de prueba eliminados. Usuarios y padrón se conservaron.');
+}
+async function loadAdminAudit(){
+  if(!isAdmin()||!sb||!$('adminAuditBody'))return;
+  const {data,error}=await sb.from('admin_actions').select('created_at,accion,detalle').order('created_at',{ascending:false}).limit(100);
+  if(error){$('adminAuditBody').innerHTML='<tr><td colspan="3">Registro disponible después de ejecutar la actualización v2.3.</td></tr>';return;}
+  $('adminAuditBody').innerHTML=(data||[]).map(r=>`<tr><td>${esc(fmtDateTime(r.created_at))}</td><td>${esc(r.accion||'')}</td><td>${esc(r.detalle||'')}</td></tr>`).join('')||'<tr><td colspan="3">Sin acciones registradas.</td></tr>';
+}
