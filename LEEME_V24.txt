@@ -1,0 +1,27 @@
+MONITOREO CBC IESTP DRELM - V2.4 WORD FIEL
+
+Objetivo de esta versión
+- Ajustar la captura a la matriz funcional derivada del documento base CBC.
+- Los indicadores cualitativos NO muestran dato cuantitativo complementario.
+- Los indicadores mixtos muestran valoración 1-5 + dato cuantitativo correspondiente.
+- Los indicadores cuantitativos muestran el dato numérico correspondiente, identificado como cuantitativo (no como mixto).
+- Los indicadores cuya captura propuesta exige URL muestran un campo URL específico.
+- Los indicadores cuya captura propuesta exige GPS conservan la referencia GPS de la visita.
+- Las valoraciones menores a 3 mantienen la regla de evidencia o medida correctiva.
+- Se incorpora la entidad evidencias, equivalente funcional a EVIDENCE_MEDIA del documento base.
+- Se incorpora REABRIR FICHA para el administrador, con motivo y bitácora.
+- Excel analítico con hojas: Base_Visitas, Respuestas, Evidencias, Medidas_Correctivas, Resumen_CBC y Diccionario.
+
+ANTES DE PUBLICAR
+1. En Supabase > SQL Editor, ejecutar ACTUALIZACION_V24_WORD_FIEL.sql una sola vez.
+2. Verificar al final: evidencias_ok=true, dato_url_ok=true, reapertura_admin_ok=true.
+3. Reemplazar los archivos de la app en App_CBC_IESTP.
+4. git add .
+5. git commit -m "Version 2.4 - fidelidad instrumento CBC y reapertura administrativa"
+6. git push
+7. En el navegador usar Ctrl+F5.
+
+IMPORTANTE
+- No volver a ejecutar el SQL v2.3 anterior si ya fue aplicado correctamente.
+- La actualización v2.4 no borra fichas, usuarios ni padrón.
+- No usar Limpiar datos de prueba salvo que realmente se quiera borrar todas las fichas de prueba.

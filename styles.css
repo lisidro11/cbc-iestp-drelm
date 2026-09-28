@@ -36,3 +36,7 @@
 
 /* v2.3 panel administrador */
 .adminKpis{grid-template-columns:repeat(4,1fr);margin-bottom:16px}.adminTitle{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:12px}.adminTitle h3{margin:0 0 5px}.adminTitle input{max-width:360px}.adminStatus{display:inline-block;padding:5px 9px;border-radius:999px;font-weight:800;font-size:11px}.adminStatus.on{background:#e7f7ee;color:#126c40}.adminStatus.off{background:#fdeaea;color:#9d2525}.dangerSmall,.dangerBtn{background:#fff!important;color:#a22626!important;border:1px solid #e3a4a4!important}.dangerSmall{padding:7px 10px!important}.dangerBtn{font-weight:800}.dangerZone{border:1px solid #efb1b1;background:#fffafa}.adminVisitRow{align-items:center}@media(max-width:760px){.adminKpis{grid-template-columns:1fr 1fr}.adminTitle{flex-direction:column}.adminTitle input{max-width:none;width:100%}}@media(max-width:480px){.adminKpis{grid-template-columns:1fr}}
+/* v2.4 · fidelidad al instrumento Word */
+#extraLabel.hidden,#extraUrlLabel.hidden{display:none!important}
+#extraLabel:not(.hidden),#extraUrlLabel:not(.hidden){display:block}
+.instrumentNote{margin-top:8px;padding:8px 10px;border-radius:8px;background:#eef6ff;color:#24445f;font-size:.84rem}
