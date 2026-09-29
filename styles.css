@@ -40,3 +40,13 @@
 #extraLabel.hidden,#extraUrlLabel.hidden{display:none!important}
 #extraLabel:not(.hidden),#extraUrlLabel:not(.hidden){display:block}
 .instrumentNote{margin-top:8px;padding:8px 10px;border-radius:8px;background:#eef6ff;color:#24445f;font-size:.84rem}
+
+/* v2.5 Cobertura e historial operativo */
+.historySummary{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}.historyTab{background:#eef6fc;color:#12385b;border:1px solid #d5e5f1}.historyTab.active{background:#0875c9;color:white}.historyTab b{margin-left:6px}.historySectionTitle{margin:18px 0 8px;color:#12385b}.closedRow{border-left:5px solid #14804a}.draftRow{border-left:5px solid #d98b00}.foreignDraft{opacity:.82}.statusPill{display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700}.statusPill.red{background:#fdeaea;color:#a21d1d}.statusPill.yellow{background:#fff3d6;color:#8a5a00}.statusPill.green{background:#e3f6eb;color:#176a3b}.statusPill.blue{background:#e4f1fd;color:#075ea8}.statusPill.orange{background:#fff0df;color:#a45100}.dashKpis article{cursor:pointer;transition:.15s}.dashKpis article:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(15,55,90,.1)}.coveragePanel{margin-top:16px}.sectionHead.compact{margin-bottom:12px;align-items:flex-end}.coverageSearch{min-width:250px}.coverageTable td:first-child{min-width:230px}.coverageTable .secondary{white-space:nowrap}@media(max-width:800px){.coveragePanel .sectionHead.compact{display:block}.coveragePanel .actions{margin-top:10px}.coverageSearch{min-width:0;width:100%}}
+
+/* v2.6 - flujo guiado */
+.step.locked{background:#edf2f6;color:#8a9aaa;opacity:.82;cursor:not-allowed;user-select:none}
+.step.done{position:relative}
+.changeIEBar{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin:-5px 0 12px;color:#6b8092;font-size:12px}
+.changeIEBar button{padding:9px 13px}
+@media(max-width:760px){.changeIEBar{align-items:stretch;flex-direction:column}.changeIEBar button{width:100%}}

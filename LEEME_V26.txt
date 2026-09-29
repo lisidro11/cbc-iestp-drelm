@@ -1,0 +1,7 @@
+CBC IESTP - ajuste de flujo guiado
+
+- En Visita, Evaluación y Resumen aparecen bloqueados hasta corresponder.
+- Cambiar IESTP se separa visualmente del flujo de pasos.
+- Se conserva la regla ya implementada: valoración 1 o 2 exige evidencia o medida correctiva antes de cerrar.
+- Se conserva v2.5: cobertura del padrón, historial separado, fichas cerradas en solo lectura y detalle clicable.
+- No requiere SQL adicional.

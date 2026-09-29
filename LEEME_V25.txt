@@ -1,0 +1,16 @@
+ACTUALIZACIÓN OPERATIVA v2.5
+
+No requiere SQL nuevo.
+
+Cambios:
+- Historial separado en Todas / Cerradas / En proceso.
+- Fichas finalizadas: estado CERRADA DEFINITIVAMENTE y solo botón Ver ficha.
+- Borradores de otro especialista: no pueden continuarse ni modificarse.
+- Tablero cruza el padrón completo IESTP con las visitas.
+- Tabla Estado de monitoreo de IESTP: Sin visitar, En proceso, Visitado, Con seguimiento, Medidas pendientes.
+- Tarjetas del tablero clicables con detalle.
+- Fichas cerradas visibles en detalle y consulta.
+- Cobertura = IESTP con al menos una ficha finalizada / total padrón.
+- Se mantiene la posibilidad de una nueva visita de seguimiento; cerrar una ficha bloquea esa ficha, no al IESTP.
+
+IMPORTANTE: esta versión no elimina ni modifica registros existentes.
