@@ -548,3 +548,37 @@ renderDash=function(){
   $('dashCards').innerHTML=`<article onclick="setDashDetail('all','Todas las visitas')"><b>${PADRON.length}</b><span>Total IESTP</span></article><article onclick="setCoverageStatus('Visitado')"><b>${visited}</b><span>IESTP visitados</span></article><article onclick="setCoverageStatus('Sin visitar')"><b>${unvisited}</b><span>Sin visitar</span></article><article onclick="setCoverageStatus('En proceso')"><b>${inprocess}</b><span>En proceso</span></article><article onclick="setDashDetail('final','Fichas cerradas definitivamente')"><b>${finals.length}</b><span>Fichas cerradas</span></article><article onclick="setDashDetail('follow','Visitas de seguimiento')"><b>${follow}</b><span>Seguimientos</span></article><article onclick="setCoverageStatus('Medidas pendientes')"><b>${pending}</b><span>Medidas pendientes</span></article><article><b>${coverage}%</b><span>Cobertura</span></article>`;
   renderCoverageTable();renderDashDetail();
 };
+
+/* ===== v2.7: bandeja operativa IESTP + padrón como universo ===== */
+function operationalRow(ie){
+  const vv=visitsForIE(ie), finals=vv.filter(v=>v.status==='Finalizada'), draft=vv.find(v=>v.status==='Borrador'), lastFinal=finals[0]||null;
+  const follow=finals.some(v=>['Seguimiento','Subsanación','Verificación'].includes(v.meta?.tipo));
+  const pending=vv.reduce((n,v)=>n+ensureMeasures(v).filter(m=>m.status!=='Subsanada').length,0);
+  let state='Sin visitar'; if(finals.length) state=follow?'Con seguimiento':'Visitado'; else if(draft) state='En proceso'; if(pending) state='Medidas pendientes';
+  return {ie,vv,finals,draft,lastFinal,follow,pending,state};
+}
+renderIE=function(){
+  const q=($('searchIE')?.value||'').trim().toLowerCase(),g=$('gestion')?.value||'',d=$('distrito')?.value||'',st=$('ieStatus')?.value||'';
+  let rows=PADRON.map(operationalRow).filter(r=>(!q||[r.ie.CEN_EDU,r.ie.COD_MOD,r.ie.CODLOCAL,r.ie.D_DIST,r.ie.D_GESTION].join(' ').toLowerCase().includes(q))&&(!g||r.ie.D_GESTION===g)&&(!d||r.ie.D_DIST===d));
+  if(st==='Mis borradores') rows=rows.filter(r=>r.draft&&(!r.draft.ownerId||r.draft.ownerId===authUser?.id)); else if(st) rows=rows.filter(r=>r.state===st);
+  rows.sort((a,b)=>{const rank={'En proceso':0,'Sin visitar':1,'Medidas pendientes':2,'Visitado':3,'Con seguimiento':4};return (rank[a.state]??9)-(rank[b.state]??9)||String(a.ie.CEN_EDU||'').localeCompare(String(b.ie.CEN_EDU||''),'es')});
+  $('ieCount').textContent=`${rows.length} IESTP encontrado(s) · padrón total ${PADRON.length}`;
+  $('ieList').innerHTML=rows.slice(0,150).map(r=>{
+    const x=r.ie,draft=r.draft,last=r.lastFinal,mine=draft&&(!draft.ownerId||draft.ownerId===authUser?.id),owner=draft?.meta?.supervisor||'otro especialista';
+    let status=stateBadge(r.state), detail='';
+    if(draft) detail=`<div class="ieWorkDetail">📝 Visita en proceso · ${esc(draft.meta?.fecha||'')} · <b>${esc(owner)}</b>${mine?' · <strong>Mi borrador</strong>':' · solo consulta'}</div>`;
+    else if(last) detail=`<div class="ieWorkDetail">🔒 Última ficha cerrada: ${esc(last.meta?.fecha||'')} · ${esc(last.meta?.supervisor||'')} · ${visitCalc(last).pct}%</div>`;
+    else detail='<div class="ieWorkDetail">Aún no registra visitas.</div>';
+    let action='';
+    if(draft){action=mine||isAdmin()?`<button onclick="resumeVisit('${draft.id}')">Continuar mi visita</button>`:`<button class="secondary" onclick="openFicha('${draft.id}')">Ver estado</button>`;}
+    else if(last){action=`<div class="ieActions"><button class="secondary" onclick="openFicha('${last.id}')">Ver última ficha</button><button onclick="selectIE('${String(x.COD_MOD||'').replace(/'/g,'')}','${String(x.CODLOCAL||'').replace(/'/g,'')}',true)">＋ Nueva visita / seguimiento</button></div>`;}
+    else action=`<button onclick="selectIE('${String(x.COD_MOD||'').replace(/'/g,'')}','${String(x.CODLOCAL||'').replace(/'/g,'')}')">Iniciar visita</button>`;
+    return `<div class="ieRow ieOperational"><div><div class="ieTitleLine"><b>${esc(x.CEN_EDU||'')}</b>${status}</div><div class="meta">CM ${esc(x.COD_MOD||'')} · CL ${esc(x.CODLOCAL||'')} · ${esc(x.D_GESTION||'')} · ${esc(x.D_DIST||'')}</div><div class="meta">${esc(x.DIR_CEN||'Dirección no consignada')}</div>${detail}</div>${action}</div>`;
+  }).join('')+(rows.length>150?'<div class="note">Se muestran los primeros 150 resultados. Use la búsqueda o el filtro de estado para precisar.</div>':'')||'<div class="note">No hay IESTP para los filtros seleccionados.</div>';
+};
+coverageRows=function(){return PADRON.map(operationalRow)};
+renderCoverageTable=function(){
+  if(!$('coverageBody'))return;const q=($('coverageSearch')?.value||'').trim().toLowerCase(),st=$('coverageStatus')?.value||'';
+  let rows=coverageRows().filter(r=>(!st||r.state===st)&&(!q||[r.ie.CEN_EDU,r.ie.COD_MOD,r.ie.CODLOCAL,r.ie.D_DIST,r.ie.D_GESTION].join(' ').toLowerCase().includes(q)));
+  $('coverageBody').innerHTML=rows.map(r=>{const v=r.lastFinal||r.draft||r.vv[0],c=v?visitCalc(v):null,mine=r.draft&&(!r.draft.ownerId||r.draft.ownerId===authUser?.id);let action;if(r.draft)action=(mine||isAdmin())?`<button class="secondary" onclick="resumeVisit('${r.draft.id}')">Ver proceso</button>`:`<span class="meta">A cargo de ${esc(r.draft.meta?.supervisor||'otro especialista')}</span>`;else if(r.lastFinal)action=`<button class="secondary" onclick="openFicha('${r.lastFinal.id}')">Ver ficha</button>`;else action=`<button class="secondary" onclick="selectIE('${String(r.ie.COD_MOD||'').replace(/'/g,'')}','${String(r.ie.CODLOCAL||'').replace(/'/g,'')}')">Nueva visita</button>`;return `<tr><td><b>${esc(r.ie.CEN_EDU||'')}</b></td><td>${esc(r.ie.COD_MOD||'')}</td><td>${esc(r.ie.CODLOCAL||'')}</td><td>${esc(r.ie.D_DIST||'')}</td><td>${stateBadge(r.state)}</td><td>${esc(v?.meta?.fecha||'—')}</td><td>${esc(v?.meta?.supervisor||'—')}</td><td>${r.lastFinal?visitCalc(r.lastFinal).pct+'%':'—'}</td><td>${action}</td></tr>`}).join('')||'<tr><td colspan="9">No hay IESTP para los filtros seleccionados.</td></tr>';
+};

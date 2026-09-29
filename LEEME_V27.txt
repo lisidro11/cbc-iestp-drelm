@@ -1,0 +1,7 @@
+CBC IESTP v2.7 - Bandeja operativa de institutos
+- Seleccionar IESTP muestra estado real por cruce padrón-visitas.
+- Filtros: todos, sin visitar, en proceso, visitado, seguimiento, medidas pendientes y mis borradores.
+- Borrador de otro especialista: solo consulta, no se puede continuar.
+- Ficha finalizada: solo lectura; una nueva visita se registra como seguimiento/nueva visita.
+- Tablero de cobertura usa el padrón completo como universo, por lo que los sin visitar se listan.
+- No requiere SQL adicional.

@@ -50,3 +50,6 @@
 .changeIEBar{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin:-5px 0 12px;color:#6b8092;font-size:12px}
 .changeIEBar button{padding:9px 13px}
 @media(max-width:760px){.changeIEBar{align-items:stretch;flex-direction:column}.changeIEBar button{width:100%}}
+
+/* v2.7 bandeja operativa IESTP */
+#institutos .filters{grid-template-columns:2fr 1fr 1fr 1.2fr}.workLegend{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}.workLegend span{font-size:11px;background:#fff;border:1px solid #dbe7f1;border-radius:999px;padding:6px 9px}.ieOperational{align-items:start}.ieTitleLine{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ieWorkDetail{margin-top:8px;padding:8px 10px;background:#f5f9fc;border-radius:9px;color:#4f687c;font-size:12px}.ieActions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.ieActions button{white-space:nowrap}@media(max-width:900px){#institutos .filters{grid-template-columns:1fr 1fr}}@media(max-width:760px){#institutos .filters{grid-template-columns:1fr}.ieActions{display:grid;grid-template-columns:1fr;width:100%}.ieActions button{width:100%}}
